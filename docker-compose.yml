@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: crypto_prices
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  streamlit:
+    build: .
+    # Оборачиваем через bash, так как базовый образ Airflow пытается все команды пропустить через CLI airflow
+    command: bash -c "streamlit run streamlit_vizualization.py --server.address=0.0.0.0"
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=crypto_prices
+      - DB_USER=postgres
+      - DB_PASSWORD=1234
+    volumes:
+      - .:/opt/airflow
+    ports:
+      - "8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  airflow:
+    build: .
+    # Используем airflow standalone для локальной оркестрации (включает веб-сервер и шедулер)
+    command: >
+      bash -c "airflow db migrate && 
+               airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com && 
+               airflow standalone"
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:1234@postgres:5432/crypto_prices
+      - AIRFLOW__CORE__PID_FOLDER=/tmp
+      - DB_HOST=postgres
+      - DB_NAME=crypto_prices
+      - DB_USER=postgres
+      - DB_PASSWORD=1234
+      - PYTHONPATH=/opt/airflow
+    volumes:
+      - .:/opt/airflow
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

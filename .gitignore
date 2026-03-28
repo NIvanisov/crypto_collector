@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE И Настройки
+.idea/
+.vscode/
+*.swp
+
+# Airflow артефакты (генерируются автоматически, в гит не нужны)
+logs/
+airflow.db
+*.pid
+airflow.cfg
+webserver_config.py
+
+# Конфиденциальные данные и токены
+.env
+
+# Базы данных / локальные тома Докера (на всякий случай)
+pgdata/
+
+# OS файлы
+.DS_Store
+Thumbs.db
